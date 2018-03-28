@@ -66,26 +66,7 @@ open class animations : AppCompatActivity(){
         animXY.playTogether(animX, animY)
 
         animXY.start()
-        ammo.visibility = View.GONE
-    }
 
-    fun translation(ammo: ImageView){
-        val displayMetrics = DisplayMetrics()
-
-        windowManager.defaultDisplay.getMetrics(displayMetrics)
-        var screenWidth = displayMetrics.widthPixels.toFloat()
-
-        val valueAnimator = ValueAnimator.ofFloat(ammo.x, target.x)
-
-        valueAnimator.addUpdateListener {
-            val value = it.animatedValue as Float
-            ammo.translationX = value
-        }
-
-        valueAnimator.interpolator = LinearInterpolator()
-        valueAnimator.duration = BaseAnimation.Companion.baseDuration.toLong()
-
-        valueAnimator.start()
     }
 
     fun createAmmo(view: View){
