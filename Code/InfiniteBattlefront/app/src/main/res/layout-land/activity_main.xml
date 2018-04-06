@@ -39,5 +39,4 @@
         app:layout_constraintVertical_bias="0.375"
         app:srcCompat="@drawable/play" />
 
-
 </android.support.constraint.ConstraintLayout>

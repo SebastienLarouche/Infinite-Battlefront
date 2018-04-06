@@ -18,8 +18,6 @@ abstract class BaseAnimation : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        pepper_tower= findViewById(R.id.pepper_tower)
-        pepper_bullet = findViewById(R.id.pepper_tower)
         frameLayout = findViewById(R.id.container)
         frameLayout.setOnClickListener { onStartAnimation() }
     }
