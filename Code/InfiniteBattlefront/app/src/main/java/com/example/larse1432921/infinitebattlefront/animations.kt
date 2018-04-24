@@ -62,10 +62,13 @@ open class Animations : AppCompatActivity(){
                 MotionEvent.ACTION_UP -> {
                     finalX = motionEvent.rawX
                     finalY = motionEvent.rawY
+
+                    createTurret(view as ImageView, view.x.toInt(), view.y.toInt())
+
                     view.x = initX
                     view.y = initY
 
-                    placeTurret(view)
+
 
                     Log.d("TAG", "ACTION_UP $finalX $finalY")
                 }
@@ -149,25 +152,25 @@ open class Animations : AppCompatActivity(){
     }
 
 
-    private fun createTurret(turretView: ImageView){
+    private fun createTurret(turretView: ImageView, posX: Int, posY: Int){
         val newTurretView = ImageView(this)
         when {
             turretView.id == R.id.greenTower ->{
-                val greenTurret = Turret('G',turretView.x, turretView.y, 175f, greenTower)
+                val greenTurret = Turret('G',posX, posY, 175f, greenTower)
                 newTurretView.setImageResource(R.drawable.green_tower)
                 turretList.add(greenTurret)
             } turretView.id == R.id.redTower -> {
-                val redTurret = Turret('R', turretView.x, turretView.y, 100f, redTower)
+                val redTurret = Turret('R', posX, posY, 100f, redTower)
             newTurretView.setImageResource(R.drawable.red_tower)
                 turretList.add(redTurret)
             } turretView.id == R.id.yellowTower -> {
-                val yellowTurret = Turret('Y', turretView.x, turretView.y, 350f, yellowTower)
+                val yellowTurret = Turret('Y', posX, posY, 350f, yellowTower)
             newTurretView.setImageResource(R.drawable.yellow_tower)
                 turretList.add(yellowTurret)
             }
         }
-        newTurretView.x = turretView.x
-        newTurretView.y = turretView.y
+        newTurretView.x = posX.toFloat()
+        newTurretView.y = posY.toFloat()
         container.addView(newTurretView)
     }
 
@@ -184,8 +187,8 @@ open class Animations : AppCompatActivity(){
             }
         }
 
-        ammoView.x = turret.x + 30
-        ammoView.y = turret.y
+        ammoView.x = turret.x.toFloat() + 30
+        ammoView.y = turret.y.toFloat()
 
         container.addView(ammoView)
 
@@ -196,10 +199,10 @@ open class Animations : AppCompatActivity(){
         return Enemy(enemyView.x+enemyView.width/2, enemyView.y+enemyView.height/2, enemyView)
     }
 
-    private fun placeTurret(view: View){
-        val posX = view.x/1920*40
-        val posY = view.y/1080*20
+    private fun placeTurret(view: View, x: Float, y: Float){
+        val posX = view.x
+        val posY = view.y
 
-        createTurret(view as ImageView)
+        createTurret(view as ImageView, posX.toInt(), posY.toInt())
     }
 }
