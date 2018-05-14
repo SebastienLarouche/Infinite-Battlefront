@@ -1,19 +1,19 @@
 package com.example.larse1432921.infinitebattlefront
 
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator.ofFloat
-import android.annotation.SuppressLint
+import android.animation.ObjectAnimator
 import android.graphics.Path
 import android.os.Bundle
-import android.provider.ContactsContract
 import android.support.constraint.ConstraintLayout
 import android.support.v7.app.AppCompatActivity
-import android.util.DisplayMetrics
 import android.view.*
 import android.view.animation.LinearInterpolator
 import android.widget.ImageView
 import android.util.Log
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.concurrent.timerTask
+
+
 
 
 open class Animations : AppCompatActivity(){
@@ -22,13 +22,16 @@ open class Animations : AppCompatActivity(){
     private lateinit var greenTower: ImageView
     private lateinit var redTower: ImageView
     private lateinit var yellowTower: ImageView
-    private lateinit var target: ImageView
-    private lateinit var enemy: Enemy
+    private lateinit var launcher: ImageView
     private var initX: Float = 0.0f
     private var initY: Float = 0.0f
     private var finalX: Float = 0.0f
     private var finalY: Float = 0.0f
     private var turretList = ArrayList<Turret>()
+    private var enemyList = ArrayList<Enemy>()
+    private val timer = Timer()
+    private lateinit var enemyTask: TimerTask
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +43,7 @@ open class Animations : AppCompatActivity(){
         greenTower = findViewById(R.id.greenTower) as ImageView
         redTower = findViewById(R.id.redTower) as ImageView
         yellowTower = findViewById(R.id.yellowTower) as ImageView
-        target = findViewById(R.id.target) as ImageView
+        launcher = findViewById(R.id.target) as ImageView
 
         val listener = View.OnTouchListener(function = { view, motionEvent ->
 
@@ -68,8 +71,6 @@ open class Animations : AppCompatActivity(){
                     view.x = initX
                     view.y = initY
 
-
-
                     Log.d("TAG", "ACTION_UP $finalX $finalY")
                 }
             }
@@ -84,71 +85,61 @@ open class Animations : AppCompatActivity(){
                 WindowManager.LayoutParams.FLAG_FULLSCREEN)
     }
 
+
     override fun onStart() {
         super.onStart()
-        enemy = createEnemy(target)
-        target.setOnClickListener{translation(enemy)}
-    }
-
-
-    private fun inRange(turretStack: ArrayList<Turret>, enemy: Enemy){
-        turretStack.forEach{
-            val distance = (Math.sqrt(Math.pow((enemy.x - it.x).toDouble(), 2.0) + Math.pow((enemy.y - it.y).toDouble(), 2.0) ))
-            if(distance <= it.range){
-                it._enemyStack?.addElement(enemy)
-                attack(it)
-            }
+        launcher.setOnClickListener{
+            launcher.visibility = View.GONE
+            enemyTask = timerTask{ createEnemy(launcher)}
+            timer.schedule(enemyTask, 1L, 3000L)
         }
     }
 
 
-    private fun translation(enemy: Enemy){
-        val enemyPath: Path = Path()
+    private fun enemyMove(enemy: Enemy){
+        val enemyPath = Path()
 
-        val displayMetrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(displayMetrics)
-
-        val screenWidth = displayMetrics.widthPixels.toFloat()
-
-        enemyPath.moveTo(0f, 540f)
-        enemyPath.lineTo(260f, 540f)
-        enemyPath.lineTo(260f, 215f)
-        enemyPath.lineTo(650f, 215f)
-        enemyPath.lineTo(650f, 650f)
-        enemyPath.lineTo(1175f, 650f)
-        enemyPath.lineTo(1175f, 430f)
-        enemyPath.lineTo(screenWidth, 430f)
-        val objectAnimator  = ofFloat(
-                enemy.enemyView,
-                "x",
-                "y",
-                enemyPath
-        )
+        enemyPath.run {
+            moveTo(0f, 540f)
+            lineTo(260f, 540f)
+            lineTo(260f, 215f)
+            lineTo(650f, 215f)
+            lineTo(650f, 650f)
+            lineTo(1175f, 650f)
+            lineTo(1175f, 430f)
+            lineTo(1920f, 430f)
+        }
+        val objectAnimator  = ObjectAnimator.ofFloat(enemy.enemyView, "x", "y", enemyPath)
 
         objectAnimator.addUpdateListener {
             enemy.x = enemy.enemyView.x
             enemy.y = enemy.enemyView.y
-            inRange(turretList, enemy)
+            inRange(turretList, enemyList)
+
         }
 
         objectAnimator.interpolator = LinearInterpolator()
-        objectAnimator.duration = 10000
+        objectAnimator.duration = 20000
         objectAnimator.start()
     }
 
 
-    private fun attack(turret: Turret){
-        val displayMetrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(displayMetrics)
-3
-        val ammo: Ammo = createAmmo(turret)
-        val animX = ofFloat(ammo.ammoView, "x", target.x+(target.width/2))
-        val animY = ofFloat(ammo.ammoView, "y", target.y+(target.height/2))
-        val animXY = AnimatorSet()
-        animXY.duration = 1
-        animXY.playTogether(animX, animY)
-
-        animXY.start()
+    private fun inRange(turretList: ArrayList<Turret>, enemyList: ArrayList<Enemy>): Boolean{
+        var inRange = false
+        turretList.forEach{
+            for(enemy in enemyList){
+                val distance = (Math.sqrt(Math.pow((enemy.x - it.x).toDouble(), 2.0) + Math.pow((enemy.y - it.y).toDouble(), 2.0) ))
+                if(distance <= it.range) {
+                    inRange = true
+                    it.addEnemy(enemy)
+                    it.attackEnemy(createAmmo(it))
+                } else {
+                    inRange = false
+                    it.removeEnemy(enemy)
+                }
+            }
+        }
+        return inRange
     }
 
 
@@ -156,21 +147,22 @@ open class Animations : AppCompatActivity(){
         val newTurretView = ImageView(this)
         when {
             turretView.id == R.id.greenTower ->{
-                val greenTurret = Turret('G',posX, posY, 175f, greenTower)
+                val greenTurret = Turret('G', posX, posY, 225f)
                 newTurretView.setImageResource(R.drawable.green_tower)
                 turretList.add(greenTurret)
             } turretView.id == R.id.redTower -> {
-                val redTurret = Turret('R', posX, posY, 100f, redTower)
+                val redTurret = Turret('R', posX, posY, 175f)
             newTurretView.setImageResource(R.drawable.red_tower)
                 turretList.add(redTurret)
             } turretView.id == R.id.yellowTower -> {
-                val yellowTurret = Turret('Y', posX, posY, 350f, yellowTower)
+                val yellowTurret = Turret('Y', posX, posY, 350f)
             newTurretView.setImageResource(R.drawable.yellow_tower)
                 turretList.add(yellowTurret)
             }
         }
         newTurretView.x = posX.toFloat()
         newTurretView.y = posY.toFloat()
+
         container.addView(newTurretView)
     }
 
@@ -192,17 +184,30 @@ open class Animations : AppCompatActivity(){
 
         container.addView(ammoView)
 
+        ammoView.layoutParams.width = 50
+        ammoView.layoutParams.height = 65
+
         return Ammo(ammoView.x, ammoView.y, ammoView)
     }
 
-    private fun createEnemy(enemyView: ImageView): Enemy{
-        return Enemy(enemyView.x+enemyView.width/2, enemyView.y+enemyView.height/2, enemyView)
-    }
 
-    private fun placeTurret(view: View, x: Float, y: Float){
-        val posX = view.x
-        val posY = view.y
+    private fun createEnemy(launcher: ImageView){
 
-        createTurret(view as ImageView, posX.toInt(), posY.toInt())
+        runOnUiThread {
+            val enemyView = ImageView(this)
+            enemyView.setImageResource(R.drawable.target)
+
+            enemyView.x = launcher.x
+            enemyView.y = launcher.y
+
+            val enemy = Enemy(enemyView.x + enemyView.width / 2, enemyView.y + enemyView.height / 2, enemyView)
+
+            container.addView(enemyView)
+            enemyView.layoutParams.height = 100
+            enemyView.layoutParams.width = 100
+
+            enemyList.add(enemy)
+            enemyMove(enemy)
+        }
     }
 }
